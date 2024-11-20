@@ -5,8 +5,9 @@ use poem_openapi::{
 };
 
 use crate::schema::example::{
-    BadRequestResponse, ExampleMultipleResponse, ExamplePathQueryResponse,
-    InternalServerErrorResponse, OkResponse, UnprocesableEntityResponse,
+    BadRequestResponse, ExampleFormRequest, ExampleFormResponse, ExampleJSON,
+    ExampleMultipleResponse, ExamplePathQueryResponse, InternalServerErrorResponse, OkResponse,
+    UnprocesableEntityResponse,
 };
 
 #[derive(Tags)]
@@ -68,5 +69,38 @@ impl ApiExample {
                 validation_error: format!("invalid status = {}", status.0),
             })),
         }
+    }
+
+    #[oai(
+        path = "/example/json",
+        method = "post",
+        tag = "ApiExampleTags::Example"
+    )]
+    async fn json_payload_and_response(&self, json: Json<ExampleJSON>) -> Json<ExampleJSON> {
+        json
+    }
+
+    #[oai(
+        path = "/example/form",
+        method = "post",
+        tag = "ApiExampleTags::Example"
+    )]
+    async fn form_payload(&self, form: ExampleFormRequest) -> Json<ExampleFormResponse> {
+        println!("{:?}", form);
+        let file = form.file.map(|x| x.file_name().unwrap_or("").to_string());
+        let files = form
+            .files
+            .iter()
+            .map(|x| x.file_name().unwrap_or("").to_string())
+            .collect();
+        Json(ExampleFormResponse {
+            key1: form.key1,
+            key2: form.key2,
+            key3: form.key3,
+            key4: form.key4,
+            key5: form.key5,
+            file,
+            files,
+        })
     }
 }
