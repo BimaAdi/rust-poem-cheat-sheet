@@ -8,6 +8,7 @@ use sqlx::{Pool, Sqlite};
 
 pub mod routes;
 pub mod schema;
+mod tests;
 
 #[derive(Clone)]
 pub struct AppState {
