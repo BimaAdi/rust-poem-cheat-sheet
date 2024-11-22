@@ -1,7 +1,7 @@
 use poem_openapi::{payload::Json, ApiResponse, Object};
 use serde::{Deserialize, Serialize};
 
-use super::common::{InternalServerErrorResponse, NotFoundResponse, PaginateResponse};
+use super::common::{InternalServerErrorResponse, NotFoundResponse, OkResponse, PaginateResponse};
 
 #[derive(Object)]
 pub struct TodoPaginateDetail {
@@ -55,4 +55,16 @@ pub struct TodoCreateOk {
 pub enum TodoCreateResponses {
     #[oai(status = 200)]
     Ok(Json<TodoCreateOk>),
+}
+
+#[derive(ApiResponse)]
+pub enum TodoDeleteResponses {
+    #[oai(status = 200)]
+    Ok(Json<OkResponse>),
+
+    #[oai(status = 404)]
+    NotFound(Json<NotFoundResponse>),
+
+    #[oai(status = 500)]
+    InternalServerError(Json<InternalServerErrorResponse>),
 }

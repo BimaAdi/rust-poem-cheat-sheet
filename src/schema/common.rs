@@ -13,6 +13,11 @@ pub struct PaginateResponse<T: ToJSON + ParseFromJSON> {
 }
 
 #[derive(Object)]
+pub struct OkResponse {
+    pub message: String,
+}
+
+#[derive(Object)]
 pub struct NotFoundResponse {
     pub message: String,
 }

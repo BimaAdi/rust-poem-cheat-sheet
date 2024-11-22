@@ -9,10 +9,10 @@ use poem_openapi::{
 
 use crate::{
     schema::{
-        common::{InternalServerErrorResponse, NotFoundResponse, PaginateResponse},
+        common::{InternalServerErrorResponse, NotFoundResponse, OkResponse, PaginateResponse},
         todo::{
-            TodoCreateOk, TodoCreateRequest, TodoCreateResponses, TodoDetailFound,
-            TodoDetailResponses, TodoPaginateDetail, TodoPaginateResponses,
+            TodoCreateOk, TodoCreateRequest, TodoCreateResponses, TodoDeleteResponses,
+            TodoDetailFound, TodoDetailResponses, TodoPaginateDetail, TodoPaginateResponses,
         },
     },
     utils::div_ceil,
@@ -159,6 +159,53 @@ impl ApiTodo {
             id: data.0,
             todo: data.1,
             is_done: data.2 == 1,
+        }))
+    }
+
+    #[oai(path = "/todo/:id", method = "delete", tag = "ApiTodoTags::Todo")]
+    async fn delete_todo(&self, id: Path<i32>, state: Data<&Arc<AppState>>) -> TodoDeleteResponses {
+        let data: Option<(i32, String, i32)> =
+            match sqlx::query_as("SELECT id, todo, is_done FROM todo WHERE id = ?")
+                .bind(id.0)
+                .fetch_optional(&state.db)
+                .await
+            {
+                Ok(x) => x,
+                Err(err) => {
+                    return TodoDeleteResponses::InternalServerError(Json(
+                        InternalServerErrorResponse::new(
+                            "routes/todo.rs",
+                            "delete_todo",
+                            "find todo on db",
+                            err.to_string().as_str(),
+                        ),
+                    ))
+                }
+            };
+
+        if data.is_none() {
+            return TodoDeleteResponses::NotFound(Json(NotFoundResponse {
+                message: format!("todo with id {} not found", id.0),
+            }));
+        }
+
+        if let Err(err) = sqlx::query("DELETE FROM todo WHERE id = ?")
+            .bind(id.0)
+            .execute(&state.db)
+            .await
+        {
+            return TodoDeleteResponses::InternalServerError(Json(
+                InternalServerErrorResponse::new(
+                    "routes/todo.rs",
+                    "delete_todo",
+                    "delete todo",
+                    err.to_string().as_str(),
+                ),
+            ));
+        }
+
+        TodoDeleteResponses::Ok(Json(OkResponse {
+            message: "todo deleted successfully".to_string(),
         }))
     }
 }

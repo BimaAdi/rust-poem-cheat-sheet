@@ -10,7 +10,7 @@ pub struct ExamplePathQueryResponse {
 }
 
 #[derive(Object)]
-pub struct OkResponse {
+pub struct OkExampleResponse {
     pub data: String,
 }
 
@@ -27,7 +27,7 @@ pub struct UnprocesableEntityResponse {
 #[derive(ApiResponse)]
 pub enum ExampleMultipleResponse {
     #[oai(status = 200)]
-    Ok(Json<OkResponse>),
+    Ok(Json<OkExampleResponse>),
 
     #[oai(status = 400)]
     BadRequest(Json<BadRequestResponse>),

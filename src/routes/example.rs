@@ -8,7 +8,8 @@ use crate::schema::{
     common::InternalServerErrorResponse,
     example::{
         BadRequestResponse, ExampleFormRequest, ExampleFormResponse, ExampleJSON,
-        ExampleMultipleResponse, ExamplePathQueryResponse, OkResponse, UnprocesableEntityResponse,
+        ExampleMultipleResponse, ExamplePathQueryResponse, OkExampleResponse,
+        UnprocesableEntityResponse,
     },
 };
 
@@ -56,7 +57,7 @@ impl ApiExample {
     )]
     async fn multiple_response(&self, status: Query<i32>) -> ExampleMultipleResponse {
         match status.0 {
-            200 => ExampleMultipleResponse::Ok(Json(OkResponse {
+            200 => ExampleMultipleResponse::Ok(Json(OkExampleResponse {
                 data: "some data".to_string(),
             })),
             400 => ExampleMultipleResponse::BadRequest(Json(BadRequestResponse {
