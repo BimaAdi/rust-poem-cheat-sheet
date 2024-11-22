@@ -3,18 +3,19 @@ use std::sync::Arc;
 use poem::web::Data;
 use poem_openapi::{
     param::{Path, Query},
-    payload::{Json, PlainText},
+    payload::Json,
     OpenApi, Tags,
 };
 
 use crate::{
     schema::{
-        common::{InternalServerErrorResponse, NotFoundResponse},
+        common::{InternalServerErrorResponse, NotFoundResponse, PaginateResponse},
         todo::{
             TodoCreateOk, TodoCreateRequest, TodoCreateResponses, TodoDetailFound,
-            TodoDetailResponses,
+            TodoDetailResponses, TodoPaginateDetail, TodoPaginateResponses,
         },
     },
+    utils::div_ceil,
     AppState,
 };
 
@@ -29,11 +30,70 @@ pub struct ApiTodo;
 #[OpenApi]
 impl ApiTodo {
     #[oai(path = "/todo", method = "get", tag = "ApiTodoTags::Todo")]
-    async fn index(&self, name: Query<Option<String>>) -> PlainText<String> {
-        match name.0 {
-            Some(name) => PlainText(format!("hello, {}!", name)),
-            None => PlainText("hello!".to_string()),
-        }
+    async fn get_paginate_todo(
+        &self,
+        page: Query<Option<i32>>,
+        page_size: Query<Option<i32>>,
+        state: Data<&Arc<AppState>>,
+    ) -> TodoPaginateResponses {
+        let page = page.0.unwrap_or(1);
+        let page_size = page_size.0.unwrap_or(5);
+        let limit = page_size;
+        let offset = (page - 1) * page_size;
+
+        let num_data: (i32,) = match sqlx::query_as("SELECT count(id) FROM todo")
+            .fetch_one(&state.db)
+            .await
+        {
+            Ok(x) => x,
+            Err(err) => {
+                return TodoPaginateResponses::InternalServerError(Json(
+                    InternalServerErrorResponse::new(
+                        "routes/todo.rs",
+                        "get_paginate_todo",
+                        "count todo on db",
+                        err.to_string().as_str(),
+                    ),
+                ))
+            }
+        };
+        let num_data = num_data.0;
+
+        let data: Vec<(i32, String, i32)> = match sqlx::query_as(
+            "SELECT id, todo, is_done FROM todo ORDER BY id DESC LIMIT ? OFFSET ?",
+        )
+        .bind(limit)
+        .bind(offset)
+        .fetch_all(&state.db)
+        .await
+        {
+            Ok(x) => x,
+            Err(err) => {
+                return TodoPaginateResponses::InternalServerError(Json(
+                    InternalServerErrorResponse::new(
+                        "routes/todo.rs",
+                        "get_paginate_todo",
+                        "find todo on db",
+                        err.to_string().as_str(),
+                    ),
+                ))
+            }
+        };
+        let num_page = div_ceil(num_data, page_size);
+        TodoPaginateResponses::Ok(Json(PaginateResponse {
+            page,
+            page_size,
+            num_data,
+            num_page,
+            results: data
+                .iter()
+                .map(|f| TodoPaginateDetail {
+                    id: f.0,
+                    todo: f.1.clone(),
+                    is_done: f.2 == 1,
+                })
+                .collect(),
+        }))
     }
 
     #[oai(path = "/todo/:id", method = "get", tag = "ApiTodoTags::Todo")]

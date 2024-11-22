@@ -7,6 +7,55 @@ use crate::{init_openapi_routes, tests::utils::setup_database, AppState};
 
 #[tokio::test]
 #[serial]
+async fn get_paginate_todo() {
+    // Given
+    let db_url = "sqlite.db";
+    setup_database(db_url).await;
+    let pool = SqlitePool::connect(format!("sqlite:./{}?mode=rwc", &db_url).as_str())
+        .await
+        .unwrap();
+    let app_state = AppState { db: pool.clone() };
+    let app = init_openapi_routes(app_state);
+    let cli = TestClient::new(app);
+    let json_payload = json!({
+        "todo": "first todo",
+        "is_done": false
+    });
+    let resp = cli.post("/api/todo").body_json(&json_payload).send().await;
+    resp.assert_status_is_ok();
+    let json_payload = json!({
+        "todo": "second todo",
+        "is_done": true
+    });
+    let resp = cli.post("/api/todo").body_json(&json_payload).send().await;
+    resp.assert_status_is_ok();
+
+    // When 1
+    let resp = cli.get("/api/todo").send().await;
+    // println!("{:?}", resp.0.into_body().into_string().await);
+
+    // Expect 1
+    resp.assert_status(StatusCode::OK);
+    resp.assert_json(json!({
+        "page": 1,
+        "page_size": 5,
+        "num_data": 2,
+        "num_page": 1,
+        "results": vec![json!({
+            "id": 2,
+            "todo": "second todo",
+            "is_done": true
+        }), json!({
+            "id": 1,
+            "todo": "first todo",
+        "is_done": false
+        })]
+    }))
+    .await;
+}
+
+#[tokio::test]
+#[serial]
 async fn get_detail_todo() {
     // Given
     let db_url = "sqlite.db";
@@ -25,11 +74,7 @@ async fn get_detail_todo() {
     resp.assert_status_is_ok();
 
     // When 1
-    let resp = cli
-        .get(format!("/api/todo/{}", 1))
-        .body_json(&json_payload)
-        .send()
-        .await;
+    let resp = cli.get(format!("/api/todo/{}", 1)).send().await;
 
     // Expect 1
     resp.assert_status_is_ok();

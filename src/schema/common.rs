@@ -1,4 +1,16 @@
-use poem_openapi::Object;
+use poem_openapi::{
+    types::{ParseFromJSON, ToJSON},
+    Object,
+};
+
+#[derive(Object)]
+pub struct PaginateResponse<T: ToJSON + ParseFromJSON> {
+    pub page: i32,
+    pub page_size: i32,
+    pub num_data: i32,
+    pub num_page: i32,
+    pub results: Vec<T>,
+}
 
 #[derive(Object)]
 pub struct NotFoundResponse {
