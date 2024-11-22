@@ -4,10 +4,12 @@ use poem_openapi::{
     OpenApi, Tags,
 };
 
-use crate::schema::example::{
-    BadRequestResponse, ExampleFormRequest, ExampleFormResponse, ExampleJSON,
-    ExampleMultipleResponse, ExamplePathQueryResponse, InternalServerErrorResponse, OkResponse,
-    UnprocesableEntityResponse,
+use crate::schema::{
+    common::InternalServerErrorResponse,
+    example::{
+        BadRequestResponse, ExampleFormRequest, ExampleFormResponse, ExampleJSON,
+        ExampleMultipleResponse, ExamplePathQueryResponse, OkResponse, UnprocesableEntityResponse,
+    },
 };
 
 #[derive(Tags)]
@@ -77,7 +79,11 @@ impl ApiExample {
         tag = "ApiExampleTags::Example"
     )]
     async fn json_payload_and_response(&self, json: Json<ExampleJSON>) -> Json<ExampleJSON> {
-        json
+        Json(ExampleJSON {
+            key1: json.key1.to_string(),
+            key2: json.key2,
+            key3: json.key3,
+        })
     }
 
     #[oai(

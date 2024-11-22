@@ -1,5 +1,7 @@
 use poem_openapi::{payload::Json, types::multipart::Upload, ApiResponse, Multipart, Object};
 
+use super::common::InternalServerErrorResponse;
+
 #[derive(Object)]
 pub struct ExamplePathQueryResponse {
     pub path: String,
@@ -22,11 +24,6 @@ pub struct UnprocesableEntityResponse {
     pub validation_error: String,
 }
 
-#[derive(Object)]
-pub struct InternalServerErrorResponse {
-    pub error: String,
-}
-
 #[derive(ApiResponse)]
 pub enum ExampleMultipleResponse {
     #[oai(status = 200)]
@@ -44,9 +41,9 @@ pub enum ExampleMultipleResponse {
 
 #[derive(Object)]
 pub struct ExampleJSON {
-    key1: String,
-    key2: i32,
-    key3: bool,
+    pub key1: String,
+    pub key2: i32,
+    pub key3: bool,
 }
 
 fn key_5_default() -> i32 {
