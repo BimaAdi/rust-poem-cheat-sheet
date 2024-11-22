@@ -165,6 +165,68 @@ async fn create_todo() {
 
 #[tokio::test]
 #[serial]
+async fn update_todo() {
+    // Given
+    let db_url = "sqlite.db";
+    setup_database(db_url).await;
+    let pool = SqlitePool::connect(format!("sqlite:./{}?mode=rwc", &db_url).as_str())
+        .await
+        .unwrap();
+    let app_state = AppState { db: pool.clone() };
+    let app = init_openapi_routes(app_state);
+    let cli = TestClient::new(app);
+    let json_payload = json!({
+        "todo": "first todo",
+        "is_done": false
+    });
+    let resp = cli.post("/api/todo").body_json(&json_payload).send().await;
+    resp.assert_status_is_ok();
+
+    // When 1
+    let resp = cli
+        .put(format!("/api/todo/{}", 1))
+        .body_json(&json!({
+            "todo": "updated_todo",
+            "is_done": true
+        }))
+        .send()
+        .await;
+
+    // Expect 1
+    resp.assert_status_is_ok();
+    resp.assert_json(json!({
+        "id": 1,
+        "todo": "updated_todo",
+        "is_done": true
+    }))
+    .await;
+    let data: (i32, String, i32) =
+        sqlx::query_as("SELECT id, todo, is_done FROM todo WHERE id = ?")
+            .bind(1)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    assert_eq!(data.0, 1);
+    assert_eq!(data.1, "updated_todo".to_string());
+    assert_eq!(data.2, 1);
+
+    // When 2
+    let resp = cli
+        .put(format!("/api/todo/{}", 2))
+        .body_json(&json_payload)
+        .send()
+        .await;
+
+    // Expect 2
+    resp.assert_status(StatusCode::NOT_FOUND);
+    resp.assert_json(json!({
+        "message": "todo with id 2 not found"
+    }))
+    .await;
+}
+
+#[tokio::test]
+#[serial]
 async fn delete_todo() {
     // Given
     let db_url = "sqlite.db";

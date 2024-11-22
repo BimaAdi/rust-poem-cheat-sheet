@@ -57,6 +57,31 @@ pub enum TodoCreateResponses {
     Ok(Json<TodoCreateOk>),
 }
 
+#[derive(Object, Deserialize)]
+pub struct TodoUpdateRequest {
+    pub todo: String,
+    pub is_done: bool,
+}
+
+#[derive(Object)]
+pub struct TodoUpdateResponse {
+    pub id: i32,
+    pub todo: String,
+    pub is_done: bool,
+}
+
+#[derive(ApiResponse)]
+pub enum TodoUpdateResponses {
+    #[oai(status = 200)]
+    Ok(Json<TodoUpdateResponse>),
+
+    #[oai(status = 404)]
+    NotFound(Json<NotFoundResponse>),
+
+    #[oai(status = 500)]
+    InternalServerError(Json<InternalServerErrorResponse>),
+}
+
 #[derive(ApiResponse)]
 pub enum TodoDeleteResponses {
     #[oai(status = 200)]

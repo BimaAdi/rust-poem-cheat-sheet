@@ -13,6 +13,7 @@ use crate::{
         todo::{
             TodoCreateOk, TodoCreateRequest, TodoCreateResponses, TodoDeleteResponses,
             TodoDetailFound, TodoDetailResponses, TodoPaginateDetail, TodoPaginateResponses,
+            TodoUpdateRequest, TodoUpdateResponse, TodoUpdateResponses,
         },
     },
     utils::div_ceil,
@@ -159,6 +160,62 @@ impl ApiTodo {
             id: data.0,
             todo: data.1,
             is_done: data.2 == 1,
+        }))
+    }
+
+    #[oai(path = "/todo/:id", method = "put", tag = "ApiTodoTags::Todo")]
+    async fn update_todo(
+        &self,
+        id: Path<i32>,
+        json: Json<TodoUpdateRequest>,
+        state: Data<&Arc<AppState>>,
+    ) -> TodoUpdateResponses {
+        let data: Option<(i32, String, i32)> =
+            match sqlx::query_as("SELECT id, todo, is_done FROM todo WHERE id = ?")
+                .bind(id.0)
+                .fetch_optional(&state.db)
+                .await
+            {
+                Ok(x) => x,
+                Err(err) => {
+                    return TodoUpdateResponses::InternalServerError(Json(
+                        InternalServerErrorResponse::new(
+                            "routes/todo.rs",
+                            "update_todo",
+                            "find todo on db",
+                            err.to_string().as_str(),
+                        ),
+                    ))
+                }
+            };
+
+        if data.is_none() {
+            return TodoUpdateResponses::NotFound(Json(NotFoundResponse {
+                message: format!("todo with id {} not found", id.0),
+            }));
+        }
+
+        if let Err(err) = sqlx::query("UPDATE todo SET todo = ?, is_done = ? WHERE id = ?")
+            .bind(&json.todo)
+            .bind(json.is_done)
+            .bind(id.0)
+            .execute(&state.db)
+            .await
+        {
+            return TodoUpdateResponses::InternalServerError(Json(
+                InternalServerErrorResponse::new(
+                    "routes/todo.rs",
+                    "update_todo",
+                    format!("update todo on db with id = {}", id.0).as_str(),
+                    err.to_string().as_str(),
+                ),
+            ));
+        }
+
+        TodoUpdateResponses::Ok(Json(TodoUpdateResponse {
+            id: id.0,
+            todo: json.todo.clone(),
+            is_done: json.is_done,
         }))
     }
 
