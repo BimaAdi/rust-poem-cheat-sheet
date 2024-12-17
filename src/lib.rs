@@ -5,7 +5,7 @@ use poem::{
     EndpointExt, Route,
 };
 use poem_openapi::OpenApiService;
-use routes::{example::ApiExample, todo::ApiTodo};
+use routes::{example::ApiExample, other_auth_route::ApiOtherAuth, todo::ApiTodo};
 use sqlx::{Pool, Sqlite};
 
 pub mod routes;
@@ -22,7 +22,7 @@ pub fn init_openapi_routes(
     app_state: AppState,
 ) -> CorsEndpoint<AddDataEndpoint<Route, Arc<AppState>>> {
     let openapi_route =
-        OpenApiService::new((ApiExample, ApiTodo), "Poem Demo", "1.0").server("/api");
+        OpenApiService::new((ApiExample, ApiTodo, ApiOtherAuth), "Poem Demo", "1.0").server("/api");
     let openapi_json_endpoint = openapi_route.spec_endpoint();
     let ui = openapi_route.swagger_ui();
     Route::new()

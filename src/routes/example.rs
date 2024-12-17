@@ -1,8 +1,11 @@
+use poem::Request;
 use poem_openapi::{
+    auth::ApiKey,
     param::{Path, Query},
     payload::{Json, PlainText},
-    OpenApi, Tags,
+    OpenApi, SecurityScheme, Tags,
 };
+use serde::{Deserialize, Serialize};
 
 use crate::schema::{
     common::InternalServerErrorResponse,
@@ -12,6 +15,25 @@ use crate::schema::{
         UnprocesableEntityResponse,
     },
 };
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UserApiKey {
+    pub token: String,
+}
+
+/// ApiKey authorization
+#[derive(SecurityScheme)]
+#[oai(
+    ty = "api_key",
+    key_name = "X-API-Key",
+    key_in = "header",
+    checker = "api_checker"
+)]
+pub struct MyApiKeyAuthorization(UserApiKey);
+
+pub async fn api_checker(_req: &Request, api_key: ApiKey) -> Option<UserApiKey> {
+    Some(UserApiKey { token: api_key.key })
+}
 
 #[derive(Tags)]
 enum ApiExampleTags {
@@ -109,5 +131,14 @@ impl ApiExample {
             file,
             files,
         })
+    }
+
+    #[oai(
+        path = "/example/auth",
+        method = "get",
+        tag = "ApiExampleTags::Example"
+    )]
+    async fn auth_example(&self, auth: MyApiKeyAuthorization) -> PlainText<String> {
+        PlainText(auth.0.token.to_string())
     }
 }
