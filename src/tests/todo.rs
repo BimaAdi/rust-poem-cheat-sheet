@@ -1,20 +1,15 @@
+use std::sync::Arc;
+
 use poem::{http::StatusCode, test::TestClient};
 use serde_json::json;
-use serial_test::serial;
 use sqlx::SqlitePool;
 
-use crate::{init_openapi_routes, tests::utils::setup_database, AppState};
+use crate::{init_openapi_routes, AppState};
 
-#[tokio::test]
-#[serial]
-async fn get_paginate_todo() {
+#[sqlx::test]
+async fn get_paginate_todo(pool: SqlitePool) -> sqlx::Result<()> {
     // Given
-    let db_url = "sqlite.db";
-    setup_database(db_url).await;
-    let pool = SqlitePool::connect(format!("sqlite:./{}?mode=rwc", &db_url).as_str())
-        .await
-        .unwrap();
-    let app_state = AppState { db: pool.clone() };
+    let app_state = Arc::new(AppState { db: pool });
     let app = init_openapi_routes(app_state);
     let cli = TestClient::new(app);
     let json_payload = json!({
@@ -76,18 +71,13 @@ async fn get_paginate_todo() {
         })]
     }))
     .await;
+    Ok(())
 }
 
-#[tokio::test]
-#[serial]
-async fn get_detail_todo() {
+#[sqlx::test]
+async fn get_detail_todo(pool: SqlitePool) -> sqlx::Result<()> {
     // Given
-    let db_url = "sqlite.db";
-    setup_database(db_url).await;
-    let pool = SqlitePool::connect(format!("sqlite:./{}?mode=rwc", &db_url).as_str())
-        .await
-        .unwrap();
-    let app_state = AppState { db: pool.clone() };
+    let app_state = Arc::new(AppState { db: pool });
     let app = init_openapi_routes(app_state);
     let cli = TestClient::new(app);
     let json_payload = json!({
@@ -122,19 +112,14 @@ async fn get_detail_todo() {
         "message": "todo with id 2 not found"
     }))
     .await;
+    Ok(())
 }
 
-#[tokio::test]
-#[serial]
-async fn create_todo() {
+#[sqlx::test]
+async fn create_todo(pool: SqlitePool) -> sqlx::Result<()> {
     // Given
-    let db_url = "sqlite.db";
-    setup_database(db_url).await;
-    let pool = SqlitePool::connect(format!("sqlite:./{}?mode=rwc", &db_url).as_str())
-        .await
-        .unwrap();
-    let app_state = AppState { db: pool.clone() };
-    let app = init_openapi_routes(app_state);
+    let app_state = Arc::new(AppState { db: pool });
+    let app = init_openapi_routes(app_state.clone());
     let cli = TestClient::new(app);
 
     // When
@@ -145,6 +130,7 @@ async fn create_todo() {
     let resp = cli.post("/api/todo").body_json(&json_payload).send().await;
 
     // Expect
+    let mut db = app_state.db.acquire().await?;
     resp.assert_status_is_ok();
     resp.assert_json(json!({
         "id": 1,
@@ -155,25 +141,20 @@ async fn create_todo() {
     let data: (i32, String, i32) =
         sqlx::query_as("SELECT id, todo, is_done FROM todo WHERE id = ?")
             .bind(1)
-            .fetch_one(&pool)
+            .fetch_one(&mut *db)
             .await
             .unwrap();
     assert_eq!(data.0, 1);
     assert_eq!(data.1, "first todo".to_string());
     assert_eq!(data.2, 0);
+    Ok(())
 }
 
-#[tokio::test]
-#[serial]
-async fn update_todo() {
+#[sqlx::test]
+async fn update_todo(pool: SqlitePool) -> sqlx::Result<()> {
     // Given
-    let db_url = "sqlite.db";
-    setup_database(db_url).await;
-    let pool = SqlitePool::connect(format!("sqlite:./{}?mode=rwc", &db_url).as_str())
-        .await
-        .unwrap();
-    let app_state = AppState { db: pool.clone() };
-    let app = init_openapi_routes(app_state);
+    let app_state = Arc::new(AppState { db: pool });
+    let app = init_openapi_routes(app_state.clone());
     let cli = TestClient::new(app);
     let json_payload = json!({
         "todo": "first todo",
@@ -181,6 +162,7 @@ async fn update_todo() {
     });
     let resp = cli.post("/api/todo").body_json(&json_payload).send().await;
     resp.assert_status_is_ok();
+    let mut db = app_state.db.acquire().await?;
 
     // When 1
     let resp = cli
@@ -203,7 +185,7 @@ async fn update_todo() {
     let data: (i32, String, i32) =
         sqlx::query_as("SELECT id, todo, is_done FROM todo WHERE id = ?")
             .bind(1)
-            .fetch_one(&pool)
+            .fetch_one(&mut *db)
             .await
             .unwrap();
     assert_eq!(data.0, 1);
@@ -223,19 +205,14 @@ async fn update_todo() {
         "message": "todo with id 2 not found"
     }))
     .await;
+    Ok(())
 }
 
-#[tokio::test]
-#[serial]
-async fn delete_todo() {
+#[sqlx::test]
+async fn delete_todo(pool: SqlitePool) -> sqlx::Result<()> {
     // Given
-    let db_url = "sqlite.db";
-    setup_database(db_url).await;
-    let pool = SqlitePool::connect(format!("sqlite:./{}?mode=rwc", &db_url).as_str())
-        .await
-        .unwrap();
-    let app_state = AppState { db: pool.clone() };
-    let app = init_openapi_routes(app_state);
+    let app_state = Arc::new(AppState { db: pool });
+    let app = init_openapi_routes(app_state.clone());
     let cli = TestClient::new(app);
     let json_payload = json!({
         "todo": "first todo",
@@ -243,6 +220,7 @@ async fn delete_todo() {
     });
     let resp = cli.post("/api/todo").body_json(&json_payload).send().await;
     resp.assert_status_is_ok();
+    let mut db = app_state.db.acquire().await?;
 
     // When 1
     let resp = cli.delete(format!("/api/todo/{}", 1)).send().await;
@@ -252,8 +230,9 @@ async fn delete_todo() {
     let data: Option<(i32, String, i32)> =
         sqlx::query_as("SELECT id, todo, is_done FROM todo WHERE id = ?")
             .bind(1)
-            .fetch_optional(&pool)
+            .fetch_optional(&mut *db)
             .await
             .unwrap();
     assert!(data.is_none());
+    Ok(())
 }

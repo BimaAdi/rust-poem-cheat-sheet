@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use poem::listener::TcpListener;
 use sqlx::SqlitePool;
 use tokio::process::Command;
@@ -34,7 +36,7 @@ async fn main() {
         .status()
         .await
         .unwrap();
-    let app_state = AppState { db: pool };
+    let app_state = Arc::new(AppState { db: pool });
     let app = init_openapi_routes(app_state);
 
     println!("run on 0.0.0.0:3000");

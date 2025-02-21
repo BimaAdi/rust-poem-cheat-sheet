@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::Arc};
 
 use poem::{
     http::StatusCode,
@@ -15,7 +15,7 @@ use crate::{init_openapi_routes, AppState};
 async fn hello() {
     // Given
     let pool = SqlitePool::connect("sqlite://:memory:").await.unwrap();
-    let app_state = AppState { db: pool };
+    let app_state = Arc::new(AppState { db: pool });
     let app = init_openapi_routes(app_state);
     let cli = TestClient::new(app);
 
@@ -31,7 +31,7 @@ async fn hello() {
 async fn path_query() {
     // Given
     let pool = SqlitePool::connect("sqlite://:memory:").await.unwrap();
-    let app_state = AppState { db: pool };
+    let app_state = Arc::new(AppState { db: pool });
     let app = init_openapi_routes(app_state);
     let cli = TestClient::new(app);
 
@@ -57,7 +57,7 @@ async fn path_query() {
 async fn path_query_nullable() {
     // Given
     let pool = SqlitePool::connect("sqlite://:memory:").await.unwrap();
-    let app_state = AppState { db: pool };
+    let app_state = Arc::new(AppState { db: pool });
     let app = init_openapi_routes(app_state);
     let cli = TestClient::new(app);
 
@@ -78,7 +78,7 @@ async fn path_query_nullable() {
 async fn multiple_response_ok() {
     // Given
     let pool = SqlitePool::connect("sqlite://:memory:").await.unwrap();
-    let app_state = AppState { db: pool };
+    let app_state = Arc::new(AppState { db: pool });
     let app = init_openapi_routes(app_state);
     let cli = TestClient::new(app);
 
@@ -101,7 +101,7 @@ async fn multiple_response_ok() {
 async fn multiple_response_bad_request() {
     // Given
     let pool = SqlitePool::connect("sqlite://:memory:").await.unwrap();
-    let app_state = AppState { db: pool };
+    let app_state = Arc::new(AppState { db: pool });
     let app = init_openapi_routes(app_state);
     let cli = TestClient::new(app);
 
@@ -124,7 +124,7 @@ async fn multiple_response_bad_request() {
 async fn multiple_response_internal_server_error() {
     // Given
     let pool = SqlitePool::connect("sqlite://:memory:").await.unwrap();
-    let app_state = AppState { db: pool };
+    let app_state = Arc::new(AppState { db: pool });
     let app = init_openapi_routes(app_state);
     let cli = TestClient::new(app);
 
@@ -147,7 +147,7 @@ async fn multiple_response_internal_server_error() {
 async fn multiple_response_uncheck_status_code() {
     // Given
     let pool = SqlitePool::connect("sqlite://:memory:").await.unwrap();
-    let app_state = AppState { db: pool };
+    let app_state = Arc::new(AppState { db: pool });
     let app = init_openapi_routes(app_state);
     let cli = TestClient::new(app);
 
@@ -170,7 +170,7 @@ async fn multiple_response_uncheck_status_code() {
 async fn json_payload_and_response() {
     // Given
     let pool = SqlitePool::connect("sqlite://:memory:").await.unwrap();
-    let app_state = AppState { db: pool };
+    let app_state = Arc::new(AppState { db: pool });
     let app = init_openapi_routes(app_state);
     let cli = TestClient::new(app);
 
@@ -196,7 +196,7 @@ async fn json_payload_and_response() {
 async fn form_payload() {
     // Given
     let pool = SqlitePool::connect("sqlite://:memory:").await.unwrap();
-    let app_state = AppState { db: pool };
+    let app_state = Arc::new(AppState { db: pool });
     let app = init_openapi_routes(app_state);
     let cli = TestClient::new(app);
     // hello file
@@ -256,7 +256,7 @@ async fn form_payload() {
 async fn auth_example() {
     // Given
     let pool = SqlitePool::connect("sqlite://:memory:").await.unwrap();
-    let app_state = AppState { db: pool };
+    let app_state = Arc::new(AppState { db: pool });
     let app = init_openapi_routes(app_state);
     let cli = TestClient::new(app);
 

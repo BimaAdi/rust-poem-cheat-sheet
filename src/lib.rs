@@ -14,13 +14,12 @@ pub mod security;
 mod tests;
 pub mod utils;
 
-#[derive(Clone)]
 pub struct AppState {
     pub db: Pool<Sqlite>,
 }
 
 pub fn init_openapi_routes(
-    app_state: AppState,
+    app_state: Arc<AppState>,
 ) -> CorsEndpoint<AddDataEndpoint<Route, Arc<AppState>>> {
     let openapi_route =
         OpenApiService::new((ApiExample, ApiTodo, ApiOtherAuth), "Poem Demo", "1.0").server("/api");
@@ -30,6 +29,6 @@ pub fn init_openapi_routes(
         .nest("/api", openapi_route)
         .nest("/docs", ui)
         .at("openapi.json", openapi_json_endpoint)
-        .with(AddData::new(Arc::new(app_state.clone())))
+        .with(AddData::new(app_state))
         .with(Cors::new())
 }

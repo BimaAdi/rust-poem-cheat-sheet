@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use poem::test::TestClient;
 use sqlx::SqlitePool;
 
@@ -7,7 +9,7 @@ use crate::{init_openapi_routes, AppState};
 async fn auth_example_same_auth() {
     // Given
     let pool = SqlitePool::connect("sqlite://:memory:").await.unwrap();
-    let app_state = AppState { db: pool };
+    let app_state = Arc::new(AppState { db: pool });
     let app = init_openapi_routes(app_state);
     let cli = TestClient::new(app);
 
@@ -26,7 +28,7 @@ async fn auth_example_same_auth() {
 async fn auth_example_different_auth() {
     // Given
     let pool = SqlitePool::connect("sqlite://:memory:").await.unwrap();
-    let app_state = AppState { db: pool };
+    let app_state = Arc::new(AppState { db: pool });
     let app = init_openapi_routes(app_state);
     let cli = TestClient::new(app);
 

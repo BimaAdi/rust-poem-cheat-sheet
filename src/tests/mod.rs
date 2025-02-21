@@ -8,5 +8,3 @@ mod paralel;
 mod serial;
 #[cfg(test)]
 mod todo;
-#[cfg(test)]
-mod utils;
