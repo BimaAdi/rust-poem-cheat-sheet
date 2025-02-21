@@ -251,3 +251,22 @@ async fn form_payload() {
     }))
     .await;
 }
+
+#[tokio::test]
+async fn auth_example() {
+    // Given
+    let pool = SqlitePool::connect("sqlite://:memory:").await.unwrap();
+    let app_state = AppState { db: pool };
+    let app = init_openapi_routes(app_state);
+    let cli = TestClient::new(app);
+
+    // When
+    let resp = cli
+        .get("/api/example/auth")
+        .header("X-API-Key", "boo")
+        .send()
+        .await;
+
+    // Expect
+    resp.assert_text("boo").await;
+}

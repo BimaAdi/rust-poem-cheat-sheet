@@ -1,48 +1,6 @@
-use poem::Request;
-use poem_openapi::{auth::ApiKey, payload::PlainText, OpenApi, SecurityScheme, Tags};
-use serde::{Deserialize, Serialize};
+use poem_openapi::{payload::PlainText, OpenApi, Tags};
 
-// But there is bug in poem openapi, you cannot put on different file see: https://github.com/poem-web/poem/issues/915
-// Because the field will become private, the work around that I found is by copy entire struct and named it with same name,
-// since poem open api define securitySchemes name using struct name
-
-// Same auth with route example
-#[derive(Debug, Serialize, Deserialize)]
-pub struct UserApiKey {
-    pub token: String,
-}
-
-#[derive(SecurityScheme)]
-#[oai(
-    ty = "api_key",
-    key_name = "X-API-Key",
-    key_in = "header",
-    checker = "api_checker"
-)]
-pub struct MyApiKeyAuthorization(UserApiKey);
-
-pub async fn api_checker(_req: &Request, api_key: ApiKey) -> Option<UserApiKey> {
-    Some(UserApiKey { token: api_key.key })
-}
-
-// Different auth with route example
-#[derive(Debug, Serialize, Deserialize)]
-pub struct OtherApiKey {
-    pub token: String,
-}
-
-#[derive(SecurityScheme)]
-#[oai(
-    ty = "api_key",
-    key_name = "X-API-Key",
-    key_in = "header",
-    checker = "api_checker_other"
-)]
-pub struct OtherAuthorization(OtherApiKey);
-
-pub async fn api_checker_other(_req: &Request, api_key: ApiKey) -> Option<OtherApiKey> {
-    Some(OtherApiKey { token: api_key.key })
-}
+use crate::security::{MyApiKeyAuthorization, OtherAuthorization};
 
 #[derive(Tags)]
 enum ApiOtherAuthTags {

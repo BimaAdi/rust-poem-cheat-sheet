@@ -1,38 +1,19 @@
-use crate::schema::{
-    common::InternalServerErrorResponse,
-    example::{
-        BadRequestResponse, ExampleFormRequest, ExampleFormResponse, ExampleJSON,
-        ExampleMultipleResponse, ExamplePathQueryResponse, OkExampleResponse,
-        UnprocesableEntityResponse,
+use crate::{
+    schema::{
+        common::InternalServerErrorResponse,
+        example::{
+            BadRequestResponse, ExampleFormRequest, ExampleFormResponse, ExampleJSON,
+            ExampleMultipleResponse, ExamplePathQueryResponse, OkExampleResponse,
+            UnprocesableEntityResponse,
+        },
     },
+    security::MyApiKeyAuthorization,
 };
-use poem::Request;
 use poem_openapi::{
-    auth::ApiKey,
     param::{Path, Query},
     payload::{Json, PlainText},
-    OpenApi, SecurityScheme, Tags,
+    OpenApi, Tags,
 };
-use serde::{Deserialize, Serialize};
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct UserApiKey {
-    pub token: String,
-}
-
-/// ApiKey authorization
-#[derive(SecurityScheme)]
-#[oai(
-    ty = "api_key",
-    key_name = "X-API-Key",
-    key_in = "header",
-    checker = "api_checker"
-)]
-pub struct MyApiKeyAuthorization(UserApiKey);
-
-pub async fn api_checker(_req: &Request, api_key: ApiKey) -> Option<UserApiKey> {
-    Some(UserApiKey { token: api_key.key })
-}
 
 #[derive(Tags)]
 enum ApiExampleTags {

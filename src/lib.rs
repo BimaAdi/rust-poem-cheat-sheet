@@ -10,6 +10,7 @@ use sqlx::{Pool, Sqlite};
 
 pub mod routes;
 pub mod schema;
+pub mod security;
 mod tests;
 pub mod utils;
 
