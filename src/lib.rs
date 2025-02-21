@@ -11,7 +11,7 @@ use sqlx::{Pool, Sqlite};
 pub mod routes;
 pub mod schema;
 mod tests;
-mod utils;
+pub mod utils;
 
 #[derive(Clone)]
 pub struct AppState {

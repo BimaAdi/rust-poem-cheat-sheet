@@ -1,12 +1,3 @@
-use poem::Request;
-use poem_openapi::{
-    auth::ApiKey,
-    param::{Path, Query},
-    payload::{Json, PlainText},
-    OpenApi, SecurityScheme, Tags,
-};
-use serde::{Deserialize, Serialize};
-
 use crate::schema::{
     common::InternalServerErrorResponse,
     example::{
@@ -15,6 +6,14 @@ use crate::schema::{
         UnprocesableEntityResponse,
     },
 };
+use poem::Request;
+use poem_openapi::{
+    auth::ApiKey,
+    param::{Path, Query},
+    payload::{Json, PlainText},
+    OpenApi, SecurityScheme, Tags,
+};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UserApiKey {
@@ -51,6 +50,7 @@ impl ApiExample {
         tag = "ApiExampleTags::Example"
     )]
     async fn hello(&self) -> PlainText<String> {
+        tracing::info!("GET /example/hello");
         PlainText("hello".to_string())
     }
 
@@ -65,6 +65,19 @@ impl ApiExample {
         query_1: Query<Option<String>>,
         query_2: Query<Option<i64>>,
     ) -> Json<ExamplePathQueryResponse> {
+        // build log
+        let mut url = format!("GET /example/path-query/{}", path.0);
+        if query_1.0.is_some() || query_2.0.is_some() {
+            url.push('?');
+        }
+        if query_1.0.is_some() {
+            url.push_str(format!("query_1={}", query_1.0.clone().unwrap()).as_str());
+        }
+        if query_2.0.is_some() {
+            url.push_str(format!("query_2={}", query_2.0.unwrap()).as_str());
+        }
+        tracing::info!("{}", url);
+
         Json(ExamplePathQueryResponse {
             path: path.0,
             query_1: query_1.0,
@@ -79,20 +92,30 @@ impl ApiExample {
     )]
     async fn multiple_response(&self, status: Query<i32>) -> ExampleMultipleResponse {
         match status.0 {
-            200 => ExampleMultipleResponse::Ok(Json(OkExampleResponse {
-                data: "some data".to_string(),
-            })),
-            400 => ExampleMultipleResponse::BadRequest(Json(BadRequestResponse {
-                validation_error: "some validataion error".to_string(),
-            })),
+            200 => {
+                tracing::info!("Ok");
+                ExampleMultipleResponse::Ok(Json(OkExampleResponse {
+                    data: "some data".to_string(),
+                }))
+            }
+            400 => {
+                tracing::info!("bad request");
+                ExampleMultipleResponse::BadRequest(Json(BadRequestResponse {
+                    validation_error: "some validataion error".to_string(),
+                }))
+            }
             500 => {
+                tracing::error!("something wrong");
                 ExampleMultipleResponse::InternalServerError(Json(InternalServerErrorResponse {
                     error: "some error".to_string(),
                 }))
             }
-            _ => ExampleMultipleResponse::Unprocessable(Json(UnprocesableEntityResponse {
-                validation_error: format!("invalid status = {}", status.0),
-            })),
+            _ => {
+                tracing::warn!("invalid status");
+                ExampleMultipleResponse::Unprocessable(Json(UnprocesableEntityResponse {
+                    validation_error: format!("invalid status = {}", status.0),
+                }))
+            }
         }
     }
 
